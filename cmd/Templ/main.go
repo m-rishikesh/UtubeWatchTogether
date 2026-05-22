@@ -10,7 +10,7 @@ import (
 func main() {
 	go handlers.Hub.Run()
 	e := echo.New()
-	e.Static("/static", "../../static")
+	e.Static("/static", "./static")
 
 	e.GET("/", handlers.Home)
 	e.GET("/ws", handlers.WebsktHandler)
