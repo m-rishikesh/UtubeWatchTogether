@@ -5,6 +5,7 @@ import (
 	"gotth/cmd/Templ/components"
 	"gotth/service"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v5"
 )
@@ -24,6 +25,7 @@ func CreateRoomHandler(c *echo.Context, hm *service.HubManager) error {
 
 func JoinRoomHandler(c *echo.Context, hm *service.HubManager) error {
 	code := c.Request().FormValue("room_code")
+	code = strings.ToUpper(code)
 	if code == "" {
 		fmt.Println("code is empty")
 	} else {

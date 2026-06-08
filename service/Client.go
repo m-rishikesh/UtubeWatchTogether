@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -34,7 +35,7 @@ type WSMessage struct {
 
 func (c *Client) Disconnect() {
 	if c.Room == nil {
-		log.Println("Room is nil")
+		log.Println("from disconnect: Room is nil")
 		return
 	}
 
@@ -45,6 +46,7 @@ func (c *Client) Disconnect() {
 	c.Once.Do(func() {
 		select {
 		case c.Room.Hub.Unregister <- c:
+			fmt.Printf("[DISCONNECTED]: client: %v disconnected from room: %v", c, c.Room)
 		default:
 		}
 		c.Conn.Close()

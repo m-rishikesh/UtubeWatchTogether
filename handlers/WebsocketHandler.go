@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"gotth/service"
 	"log"
 	"net/http"
@@ -18,12 +19,12 @@ var upgrader = websocket.Upgrader{
 func WebsktHandler(c *echo.Context, hm *service.HubManager) error {
 	// Get room code from query parameter
 	roomCode := c.QueryParam("code")
-
+	fmt.Println("roomcode:", roomCode)
 	var targetHub *service.Hub
 
 	// If room code is provided, find the room; otherwise use default hub
+	room := hm.FindRoom(roomCode)
 	if roomCode != "" {
-		room := hm.FindRoom(roomCode)
 		if room == nil {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "Room not found"})
 		}
@@ -38,9 +39,9 @@ func WebsktHandler(c *echo.Context, hm *service.HubManager) error {
 		return err
 	}
 
-	client := &service.Client{Conn: conn, Send: make(chan []byte, 256)}
+	client := &service.Client{Conn: conn, Send: make(chan []byte, 256), Room: room}
 	targetHub.Register <- client
-	log.Println("Connected:", client, "to room:", roomCode)
+	log.Println("[CONNECTED]:", client, "to room:", roomCode)
 
 	go client.SendToHub(targetHub)
 	go client.ReceiveFromHub(targetHub)
