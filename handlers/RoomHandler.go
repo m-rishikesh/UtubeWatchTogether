@@ -24,7 +24,11 @@ func CreateRoomHandler(c *echo.Context, hm *service.HubManager) error {
 
 func JoinRoomHandler(c *echo.Context, hm *service.HubManager) error {
 	code := c.Request().FormValue("room_code")
-	fmt.Println("code")
+	if code == "" {
+		fmt.Println("code is empty")
+	} else {
+		fmt.Println("code", code)
+	}
 	room := hm.FindRoom(code)
 	fmt.Println("room:", room)
 	if room == nil {
