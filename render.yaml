@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: gotth
-    runtime: go
-    rootDir: GOTTH
-    buildCommand: go build -o bin/gotth ./cmd/Templ
-    startCommand: ./bin/gotth
-
-

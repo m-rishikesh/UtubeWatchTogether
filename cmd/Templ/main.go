@@ -4,7 +4,6 @@ import (
 	"gotth/handlers"
 	"gotth/service"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/labstack/echo/v5"
@@ -28,11 +27,5 @@ func main() {
 		return handlers.JoinRoomHandler(c, hm)
 	})
 
-	// Use PORT environment variable if set, otherwise default to 8080
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	log.Fatal(e.Start(":" + port))
+	log.Fatal(e.Start(":8080"))
 }

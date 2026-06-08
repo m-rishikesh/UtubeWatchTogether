@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"log"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -11,6 +12,7 @@ type Client struct {
 	Conn *websocket.Conn
 	Send chan []byte
 	Room *Room
+	Once sync.Once
 }
 
 type ChatMessage struct {
@@ -30,12 +32,27 @@ type WSMessage struct {
 	ChatMessage  *ChatMessage  `json:"chatmessage"`
 }
 
-func (c *Client) SendToHub(h *Hub) {
-	defer func() {
-		h.Unregister <- c
-		c.Conn.Close()
-	}()
+func (c *Client) Disconnect() {
+	if c.Room == nil {
+		log.Println("Room is nil")
+		return
+	}
 
+	if c.Room.Hub == nil {
+		log.Println("Hub is nil")
+		return
+	}
+	c.Once.Do(func() {
+		select {
+		case c.Room.Hub.Unregister <- c:
+		default:
+		}
+		c.Conn.Close()
+	})
+}
+
+func (c *Client) SendToHub(h *Hub) {
+	defer c.Disconnect()
 	for {
 		_, msg, err := c.Conn.ReadMessage()
 		if err != nil {
@@ -62,7 +79,7 @@ func (c *Client) SendToHub(h *Hub) {
 }
 
 func (c *Client) ReceiveFromHub(h *Hub) {
-	defer c.Conn.Close()
+	defer c.Disconnect()
 	for {
 		message, ok := <-c.Send
 		if !ok {
@@ -71,7 +88,8 @@ func (c *Client) ReceiveFromHub(h *Hub) {
 
 		err := c.Conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
-			break
+			c.Disconnect()
+			return
 		}
 	}
 }
