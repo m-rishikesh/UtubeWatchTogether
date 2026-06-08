@@ -53,16 +53,30 @@ templ VideoPlayerContent(roomCode string) {
             >
 
                 <button
-                    hx-on:click="player.play()"
-                >
-                    Play
-                </button>
+    hx-on:click="
+        player.play();
+        sendVideoMessage({
+            type:'play',
+            currentTime:player.currentTime,
+            sendAt:Date.now()
+        });
+    "
+>
+    Play
+</button>
 
-                <button
-                    hx-on:click="player.pause()"
-                >
-                    Pause
-                </button>
+<button
+    hx-on:click="
+        player.pause();
+        sendVideoMessage({
+            type:'pause',
+            currentTime:player.currentTime,
+            sendAt:Date.now()
+        });
+    "
+>
+    Pause
+</button>
 
                 <button
                     hx-on:click="
@@ -276,7 +290,7 @@ templ VideoPlayerContent(roomCode string) {
                         video.currentTime +
                         delay;
 
-                    player.play();
+                    player.play().catch(console.error);
 
                 } else {
 
@@ -300,7 +314,7 @@ templ VideoPlayerContent(roomCode string) {
                     video.currentTime +
                     delay;
 
-                player.play();
+                player.play().catch(console.error);
             }
 
             else if (
@@ -310,7 +324,7 @@ templ VideoPlayerContent(roomCode string) {
                 player.currentTime =
                     video.currentTime;
 
-                player.pause();
+                player.pause().catch(console.error);
             }
 
             else if (
@@ -326,39 +340,7 @@ templ VideoPlayerContent(roomCode string) {
             }
         };
 
-        player.addEventListener(
-            "play",
-            () => {
-
-                if (isSeeking)
-                    return;
-
-                sendVideoMessage({
-                    type:"play",
-                    currentTime:
-                        player.currentTime,
-                    sendAt:Date.now()
-                });
-
-            }
-        );
-
-        player.addEventListener(
-            "pause",
-            () => {
-
-                if (isSeeking)
-                    return;
-
-                sendVideoMessage({
-                    type:"pause",
-                    currentTime:
-                        player.currentTime,
-                    sendAt:Date.now()
-                });
-
-            }
-        );
+        
 
         player.addEventListener(
             "timeupdate",
