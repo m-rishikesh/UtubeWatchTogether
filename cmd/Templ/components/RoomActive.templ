@@ -17,81 +17,49 @@ templ RoomActive(room Room) {
             <!-- ROOM HEADER WITH CODE -->
             <div
                 style="
-                    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-                    padding:15px 20px;
+                    background:#000;
+                    padding:16px 20px;
                     display:flex;
                     justify-content:space-between;
                     align-items:center;
-                    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+                    border-bottom:1px solid #e0e0e0;
                 "
             >
-                <h2
-                    style="
-                        color:white;
-                        margin:0;
-                        font-size:1.5em;
-                    "
-                >
-                    🎬 <p>Room Name</p>
-                </h2>
-
-                <div
-                    style="
-                        display:flex;
-                        align-items:center;
-                        gap:15px;
-                    "
-                >
-                    <div
+                <div>
+                    <p style="color:#999; font-size:0.85em; margin-bottom:4px;">Room Code</p>
+                    <span
+                        id="roomCodeDisplay"
                         style="
-                            background:rgba(255,255,255,0.2);
-                            padding:8px 16px;
-                            border-radius:8px;
-                            display:flex;
-                            align-items:center;
-                            gap:10px;
+                            color:white;
+                            font-size:1.4em;
+                            font-weight:600;
+                            letter-spacing:3px;
+                            font-family:monospace;
                         "
                     >
-                        <span
-                            style="
-                                color:white;
-                                font-size:0.9em;
-                                font-weight:bold;
-                            "
-                        >
-                            Room Code:
-                        </span>
-                        <span
-                            id="roomCodeDisplay"
-                            style="
-                                color:white;
-                                font-size:1.3em;
-                                font-weight:bold;
-                                letter-spacing:2px;
-                                font-family:monospace;
-                            "
-                        >
-                            { room.Code }
-                        </span>
-                    </div>
+                        { room.Code }
+                    </span>
+                </div>
 
+                <div style="display:flex; gap:8px;">
                     <button
                         type="button"
                         onclick="copyRoomCode()"
                         style="
-                            background:white;
-                            color:#667eea;
+                            background:#333;
+                            color:white;
                             border:none;
                             padding:8px 16px;
-                            border-radius:6px;
+                            border-radius:4px;
                             cursor:pointer;
-                            font-weight:bold;
-                            transition:all 0.3s ease;
+                            font-size:0.9em;
+                            font-weight:500;
+                            transition:all 0.2s;
                         "
-                        onmouseover="this.style.background='#f0f0f0'"
-                        onmouseout="this.style.background='white'"
+                        onmouseover="this.style.background='#444'"
+                        onmouseout="this.style.background='#333'"
                     >
-                        📋 Copy Code
+                        Copy
                     </button>
 
                     <button
@@ -100,19 +68,20 @@ templ RoomActive(room Room) {
                         hx-target="body"
                         hx-swap="innerHTML"
                         style="
-                            background:rgba(255,255,255,0.2);
-                            color:white;
-                            border:2px solid white;
+                            background:#f5f5f5;
+                            color:#000;
+                            border:1px solid #e0e0e0;
                             padding:8px 16px;
-                            border-radius:6px;
+                            border-radius:4px;
                             cursor:pointer;
-                            font-weight:bold;
-                            transition:all 0.3s ease;
+                            font-size:0.9em;
+                            font-weight:500;
+                            transition:all 0.2s;
                         "
-                        onmouseover="this.style.background='rgba(255,255,255,0.3)'"
-                        onmouseout="this.style.background='rgba(255,255,255,0.2)'"
+                        onmouseover="this.style.background='#efefef'"
+                        onmouseout="this.style.background='#f5f5f5'"
                     >
-                        🏠 Home
+                        Home
                     </button>
                 </div>
             </div>
