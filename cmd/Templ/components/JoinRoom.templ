@@ -1,0 +1,225 @@
+package components
+
+templ JoinRoom() {
+    @Base("Join Room - GoTTH") {
+        <div
+            style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 90vh;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            "
+        >
+            <div
+                style="
+                    background: white;
+                    padding: 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                    max-width: 500px;
+                    width: 100%;
+                "
+            >
+                <div
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 30px;
+                    "
+                >
+                    <h1
+                        style="
+                            color: #333;
+                            margin: 0;
+                            font-size: 1.8em;
+                        "
+                    >
+                        Join Room
+                    </h1>
+                    <button
+                        type="button"
+                        hx-get="/"
+                        hx-target="body"
+                        hx-swap="innerHTML"
+                        style="
+                            background: #f0f0f0;
+                            border: none;
+                            padding: 8px 12px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 1.2em;
+                        "
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <p
+                    style="
+                        color: #666;
+                        margin-bottom: 30px;
+                        text-align: center;
+                        font-size: 0.95em;
+                    "
+                >
+                    Enter the room code to join an existing watch party
+                </p>
+
+                <form
+                    hx-post="/join-room"
+                    hx-target="body"
+                    hx-swap="innerHTML"
+                    style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                    "
+                >
+                    <div
+                        style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                        "
+                    >
+                        <label
+                            for="room-code"
+                            style="
+                                color: #333;
+                                font-weight: bold;
+                                font-size: 1em;
+                            "
+                        >
+                            Room Code
+                        </label>
+                        <input
+                            type="text"
+                            id="room-code"
+                            name="room_code"
+                            placeholder="e.g., ABC-123-XYZ"
+                            required
+                            style="
+                                padding: 12px;
+                                border: 2px solid #e0e0e0;
+                                border-radius: 8px;
+                                font-size: 1.2em;
+                                text-align: center;
+                                letter-spacing: 2px;
+                                text-transform: uppercase;
+                                transition: border-color 0.3s;
+                            "
+                            onfocus="this.style.borderColor='#667eea'"
+                            onblur="this.style.borderColor='#e0e0e0'"
+                        />
+                    </div>
+
+                    <div
+                        style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                        "
+                    >
+                        <label
+                            for="username"
+                            style="
+                                color: #333;
+                                font-weight: bold;
+                                font-size: 1em;
+                            "
+                        >
+                            Your Name
+                        </label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Enter your name"
+                            required
+                            style="
+                                padding: 12px;
+                                border: 2px solid #e0e0e0;
+                                border-radius: 8px;
+                                font-size: 1em;
+                                transition: border-color 0.3s;
+                            "
+                            onfocus="this.style.borderColor='#667eea'"
+                            onblur="this.style.borderColor='#e0e0e0'"
+                        />
+                    </div>
+
+                    <div
+                        style="
+                            background: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 8px;
+                            border-left: 4px solid #764ba2;
+                        "
+                    >
+                        <p
+                            style="
+                                margin: 0;
+                                color: #666;
+                                font-size: 0.9em;
+                            "
+                        >
+                            💡 You can find the room code in the invite link or ask the room creator
+                        </p>
+                    </div>
+
+                    <div
+                        style="
+                            display: flex;
+                            gap: 12px;
+                            margin-top: 20px;
+                        "
+                    >
+                        <button
+                            type="submit"
+                            style="
+                                flex: 1;
+                                padding: 14px;
+                                background: #764ba2;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                font-size: 1.1em;
+                                cursor: pointer;
+                                font-weight: bold;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.background='#653a8a'"
+                            onmouseout="this.style.background='#764ba2'"
+                        >
+                            Join Room
+                        </button>
+                        <button
+                            type="button"
+                            hx-get="/"
+                            hx-target="body"
+                            hx-swap="innerHTML"
+                            style="
+                                flex: 1;
+                                padding: 14px;
+                                background: #e0e0e0;
+                                color: #333;
+                                border: none;
+                                border-radius: 8px;
+                                font-size: 1.1em;
+                                cursor: pointer;
+                                font-weight: bold;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.background='#d0d0d0'"
+                            onmouseout="this.style.background='#e0e0e0'"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+}

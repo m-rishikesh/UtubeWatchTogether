@@ -8,7 +8,7 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func VideoPlayer() templ.Component {
+func Home() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -41,13 +41,13 @@ func VideoPlayer() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = VideoPlayerContent("").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div style=\"\r\n                display:flex;\r\n                justify-content:center;\r\n                align-items:center;\r\n                height:90vh;\r\n                background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);\r\n            \"><div style=\"\r\n                    background:white;\r\n                    padding:40px;\r\n                    border-radius:12px;\r\n                    box-shadow:0 8px 32px rgba(0,0,0,0.1);\r\n                    text-align:center;\r\n                    width:450px;\r\n                \"><h1>🎬 Watch Party</h1><p>Synchronized video watching experience</p><div style=\"\r\n                        display:flex;\r\n                        flex-direction:column;\r\n                        gap:20px;\r\n                    \"><button type=\"button\" hx-post=\"/create-room\" hx-target=\"body\" hx-swap=\"innerHTML\">➕ Create Room</button> <button type=\"button\" hx-get=\"/join-room-form\" hx-target=\"body\" hx-swap=\"innerHTML\">🚪 Join Room</button></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Base("Home").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Base("GoTTH - Watch Party").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

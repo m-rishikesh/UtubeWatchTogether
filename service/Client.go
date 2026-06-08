@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -9,6 +10,24 @@ import (
 type Client struct {
 	Conn *websocket.Conn
 	Send chan []byte
+	Room *Room
+}
+
+type ChatMessage struct {
+	User    string `json:"user"`
+	Message string `json:"message"`
+}
+
+type VideoMessage struct {
+	Type        string  `json:"type"`
+	CurrentTime float64 `json:"currentTime"`
+	SendAt      int64   `json:"sendAt"`
+	IsPlaying   bool    `json:"isPlaying,omitempty"`
+}
+
+type WSMessage struct {
+	VideoMessage *VideoMessage `json:"videomessage"`
+	ChatMessage  *ChatMessage  `json:"chatmessage"`
 }
 
 func (c *Client) SendToHub(h *Hub) {
@@ -23,7 +42,21 @@ func (c *Client) SendToHub(h *Hub) {
 			break
 		}
 		log.Println("Received:", string(msg))
-		h.Broadcast <- BroadcastMessage{msg, c}
+		var wsmsg WSMessage
+		json.Unmarshal(msg, &wsmsg)
+
+		switch {
+		case wsmsg.ChatMessage != nil:
+			h.Broadcast <- BroadcastMessage{
+				MessageChat: msg,
+				Sender:      c,
+			}
+		case wsmsg.VideoMessage != nil:
+			h.Broadcast <- BroadcastMessage{
+				MessageVideo: msg,
+				Sender:       c,
+			}
+		}
 	}
 
 }

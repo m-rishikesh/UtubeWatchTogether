@@ -1,0 +1,142 @@
+package components
+
+type Room struct {
+    Code string
+}
+
+templ RoomActive(room Room) {
+    @Base("Room - GoTTH") {
+        <div
+            style="
+                display:flex;
+                flex-direction:column;
+                height:100vh;
+                background:#f5f5f5;
+            "
+        >
+            <!-- ROOM HEADER WITH CODE -->
+            <div
+                style="
+                    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+                    padding:15px 20px;
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+                "
+            >
+                <h2
+                    style="
+                        color:white;
+                        margin:0;
+                        font-size:1.5em;
+                    "
+                >
+                    🎬 <p>Room Name</p>
+                </h2>
+
+                <div
+                    style="
+                        display:flex;
+                        align-items:center;
+                        gap:15px;
+                    "
+                >
+                    <div
+                        style="
+                            background:rgba(255,255,255,0.2);
+                            padding:8px 16px;
+                            border-radius:8px;
+                            display:flex;
+                            align-items:center;
+                            gap:10px;
+                        "
+                    >
+                        <span
+                            style="
+                                color:white;
+                                font-size:0.9em;
+                                font-weight:bold;
+                            "
+                        >
+                            Room Code:
+                        </span>
+                        <span
+                            id="roomCodeDisplay"
+                            style="
+                                color:white;
+                                font-size:1.3em;
+                                font-weight:bold;
+                                letter-spacing:2px;
+                                font-family:monospace;
+                            "
+                        >
+                            { room.Code }
+                        </span>
+                    </div>
+
+                    <button
+                        type="button"
+                        onclick="copyRoomCode()"
+                        style="
+                            background:white;
+                            color:#667eea;
+                            border:none;
+                            padding:8px 16px;
+                            border-radius:6px;
+                            cursor:pointer;
+                            font-weight:bold;
+                            transition:all 0.3s ease;
+                        "
+                        onmouseover="this.style.background='#f0f0f0'"
+                        onmouseout="this.style.background='white'"
+                    >
+                        📋 Copy Code
+                    </button>
+
+                    <button
+                        type="button"
+                        hx-get="/"
+                        hx-target="body"
+                        hx-swap="innerHTML"
+                        style="
+                            background:rgba(255,255,255,0.2);
+                            color:white;
+                            border:2px solid white;
+                            padding:8px 16px;
+                            border-radius:6px;
+                            cursor:pointer;
+                            font-weight:bold;
+                            transition:all 0.3s ease;
+                        "
+                        onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.2)'"
+                    >
+                        🏠 Home
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIDEO PLAYER CONTENT -->
+            <div
+                style="
+                    flex:1;
+                    overflow:auto;
+                "
+            >
+                @VideoPlayerContent(room.Code)
+            </div>
+        </div>
+
+        <script>
+            function copyRoomCode() {
+                const code = document.getElementById('roomCodeDisplay').textContent;
+                navigator.clipboard.writeText(code).then(() => {
+                    alert('Room code copied to clipboard!');
+                }).catch(() => {
+                    alert('Failed to copy room code');
+                });
+            }
+        </script>
+    }
+}

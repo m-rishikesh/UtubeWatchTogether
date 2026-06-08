@@ -1,0 +1,57 @@
+package components
+
+templ Home() {
+    @Base("GoTTH - Watch Party") {
+        <div
+            style="
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                height:90vh;
+                background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+            "
+        >
+            <div
+                style="
+                    background:white;
+                    padding:40px;
+                    border-radius:12px;
+                    box-shadow:0 8px 32px rgba(0,0,0,0.1);
+                    text-align:center;
+                    width:450px;
+                "
+            >
+                <h1>🎬 Watch Party</h1>
+
+                <p>Synchronized video watching experience</p>
+
+                <div
+                    style="
+                        display:flex;
+                        flex-direction:column;
+                        gap:20px;
+                    "
+                >
+                    <button
+                        type="button"
+                        hx-post="/create-room"
+                        hx-target="body"
+                        hx-swap="innerHTML"
+                    >
+                        ➕ Create Room
+                    </button>
+
+                    <button
+                        type="button"
+                        hx-get="/join-room-form"
+                        hx-target="body"
+                        hx-swap="innerHTML"
+                    >
+                        🚪 Join Room
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+

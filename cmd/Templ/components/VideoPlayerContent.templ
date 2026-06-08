@@ -1,0 +1,441 @@
+package components
+
+templ VideoPlayerContent(roomCode string) {
+    <div
+        style="
+            display:flex;
+            gap:20px;
+            padding:20px;
+            height:90vh;
+        "
+    >
+
+        <!-- VIDEO SECTION -->
+
+        <div
+            style="
+                flex:3;
+                display:flex;
+                flex-direction:column;
+                align-items:center;
+                gap:16px;
+            "
+        >
+
+            <video
+                id="player"
+                width="640"
+                style="
+                    border-radius:12px;
+                    background:black;
+                "
+            >
+                <source
+                    src="/static/tuf_bug.mp4"
+                    type="video/mp4"
+                >
+            </video>
+
+            <input
+                id="timeline"
+                type="range"
+                min="0"
+                max="100"
+                value="0"
+                style="width:640px;"
+            />
+
+            <div
+                style="
+                    display:flex;
+                    gap:12px;
+                "
+            >
+
+                <button
+                    hx-on:click="player.play()"
+                >
+                    Play
+                </button>
+
+                <button
+                    hx-on:click="player.pause()"
+                >
+                    Pause
+                </button>
+
+                <button
+                    hx-on:click="
+                        player.currentTime += 10;
+                        sendVideoMessage({
+                            type:'seek',
+                            currentTime:player.currentTime,
+                            sendAt:Date.now()
+                        });
+                    "
+                >
+                    +10s
+                </button>
+
+                <button
+                    hx-on:click="
+                        player.currentTime -= 10;
+                        sendVideoMessage({
+                            type:'seek',
+                            currentTime:player.currentTime,
+                            sendAt:Date.now()
+                        });
+                    "
+                >
+                    -10s
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- CHAT SECTION -->
+
+        <div
+            style="
+                flex:1;
+                border:1px solid #ccc;
+                border-radius:12px;
+                display:flex;
+                flex-direction:column;
+                overflow:hidden;
+            "
+        >
+
+            <div
+                id="chatMessages"
+                style="
+                    flex:1;
+                    overflow-y:auto;
+                    padding:10px;
+                    display:flex;
+                    flex-direction:column;
+                    gap:8px;
+                "
+            >
+            </div>
+
+            <div
+                style="
+                    display:flex;
+                    border-top:1px solid #ccc;
+                "
+            >
+
+                <input
+                    id="chatInput"
+                    placeholder="Type a message..."
+                    style="
+                        flex:1;
+                        border:none;
+                        padding:10px;
+                        outline:none;
+                    "
+                />
+
+                <button id="sendChat">
+                    Send
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // Room code injected directly from template
+        const ROOM_CODE = "{{roomCode}}";
+        console.log(ROOM_CODE)
+        const protocol =
+            window.location.protocol === "https:"
+            ? "wss:"
+            : "ws:";
+        
+        const socket = new WebSocket(
+            `${protocol}//${window.location.host}/ws?code=${ROOM_CODE}`
+        );
+        console.log(`${protocol}//${window.location.host}/ws?code=${ROOM_CODE}`)
+        const player =
+            document.getElementById("player");
+
+        const timeline =
+            document.getElementById("timeline");
+
+        const chatMessages =
+            document.getElementById("chatMessages");
+
+        const chatInput =
+            document.getElementById("chatInput");
+
+        let isSeeking = false;
+
+        socket.onopen = () => {
+            console.log("Connected");
+        };
+
+        socket.onerror = (err) => {
+            console.log(err);
+        };
+
+        socket.onclose = () => {
+            console.log("Disconnected");
+        };
+
+        function send(msg) {
+            if (
+                socket.readyState === WebSocket.OPEN
+            ) {
+                socket.send(
+                    JSON.stringify(msg)
+                );
+            }
+        }
+
+        function sendVideoMessage(video) {
+            send({
+                videomessage: video,
+                chatmessage: null
+            });
+        }
+
+        function sendChatMessage(text) {
+            send({
+                videomessage: null,
+                chatmessage: {
+                    user: "Anonymous",
+                    message: text
+                }
+            });
+        }
+
+        function appendChat(
+            user,
+            message
+        ) {
+
+            const div =
+                document.createElement("div");
+
+            div.style.padding = "8px";
+            div.style.borderRadius = "8px";
+            div.style.background =
+                "#efefef";
+
+            div.innerHTML =
+                `<b>${user}</b><br>${message}`;
+
+            chatMessages.appendChild(div);
+
+            chatMessages.scrollTop =
+                chatMessages.scrollHeight;
+        }
+
+        socket.onmessage = (event) => {
+
+            const msg =
+                JSON.parse(event.data);
+
+            console.log("RAW: ",event.data)
+
+
+            if (msg.chatmessage) {
+
+                appendChat(
+                    msg.chatmessage.user,
+                    msg.chatmessage.message
+                );
+
+                return;
+            }
+
+            if (!msg.videomessage)
+                return;
+
+            const video =
+                msg.videomessage;
+
+            if (
+                video.type === "sync"
+            ) {
+
+                if (
+                    video.isPlaying
+                ) {
+
+                    const delay =
+                        (Date.now() -
+                        video.sendAt) / 1000;
+
+                    player.currentTime =
+                        video.currentTime +
+                        delay;
+
+                    player.play();
+
+                } else {
+
+                    player.currentTime =
+                        video.currentTime;
+
+                    player.pause();
+                }
+
+            }
+
+            else if (
+                video.type === "play"
+            ) {
+
+                const delay =
+                    (Date.now() -
+                    video.sendAt) / 1000;
+
+                player.currentTime =
+                    video.currentTime +
+                    delay;
+
+                player.play();
+            }
+
+            else if (
+                video.type === "pause"
+            ) {
+
+                player.currentTime =
+                    video.currentTime;
+
+                player.pause();
+            }
+
+            else if (
+                video.type === "seek"
+            ) {
+
+                isSeeking = true;
+
+                player.currentTime =
+                    video.currentTime;
+
+                isSeeking = false;
+            }
+        };
+
+        player.addEventListener(
+            "play",
+            () => {
+
+                if (isSeeking)
+                    return;
+
+                sendVideoMessage({
+                    type:"play",
+                    currentTime:
+                        player.currentTime,
+                    sendAt:Date.now()
+                });
+
+            }
+        );
+
+        player.addEventListener(
+            "pause",
+            () => {
+
+                if (isSeeking)
+                    return;
+
+                sendVideoMessage({
+                    type:"pause",
+                    currentTime:
+                        player.currentTime,
+                    sendAt:Date.now()
+                });
+
+            }
+        );
+
+        player.addEventListener(
+            "timeupdate",
+            () => {
+
+                if (
+                    !player.duration
+                )
+                    return;
+
+                if (
+                    !isSeeking
+                ) {
+
+                    timeline.value =
+                        (player.currentTime /
+                        player.duration) *
+                        100;
+                }
+            }
+        );
+
+        timeline.addEventListener(
+            "change",
+            () => {
+
+                player.currentTime =
+                    (timeline.value / 100)
+                    * player.duration;
+
+                sendVideoMessage({
+                    type:"seek",
+                    currentTime:
+                        player.currentTime,
+                    sendAt:Date.now()
+                });
+
+            }
+        );
+
+        document
+            .getElementById("sendChat")
+            .addEventListener(
+                "click",
+                () => {
+
+                    const text =
+                        chatInput.value
+                        .trim();
+
+                    if (!text)
+                        return;
+
+                    sendChatMessage(
+                        text
+                    );
+
+                    chatInput.value = "";
+                }
+            );
+
+        chatInput.addEventListener(
+            "keydown",
+            (e) => {
+
+                if (
+                    e.key === "Enter"
+                ) {
+
+                    document
+                        .getElementById(
+                            "sendChat"
+                        )
+                        .click();
+                }
+            }
+        );
+
+    </script>
+}
