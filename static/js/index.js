@@ -1,5 +1,5 @@
 console.log("INDEX.JS LOADED")
-const ws = new WebSocket("ws://localhost:8080/ws/video")
+const ws = new WebSocket("wss://utubewatchtogether.onrender.com/ws/video")
 const peers = {}
 const pendingCandidates = {};
 let userId;
