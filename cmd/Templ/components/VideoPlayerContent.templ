@@ -159,6 +159,12 @@ templ VideoPlayerContent(roomCode string) {
             </div>
 
         </div>
+        <footer>
+            <div id="videos">
+                <h1>Local Video</h1>
+                <video id="local" autoplay muted playsinline></video>
+            </div>
+        </footer>
 
     </div>
 
@@ -174,6 +180,7 @@ templ VideoPlayerContent(roomCode string) {
         const socket = new WebSocket(
             `${protocol}//${window.location.host}/ws?code=${ROOM_CODE}`
         );
+
         console.log(`${protocol}//${window.location.host}/ws?code=${ROOM_CODE}`)
         const player =
             document.getElementById("player");
@@ -420,4 +427,5 @@ templ VideoPlayerContent(roomCode string) {
         );
 
     </script>
+    <script src="/static/js/index.js"></script>
 }
