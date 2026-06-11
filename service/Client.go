@@ -16,6 +16,27 @@ type Client struct {
 	Once sync.Once
 }
 
+type RTCClient struct {
+	ID   string
+	Conn *websocket.Conn
+	Mu   *sync.Mutex
+	Room *Room
+}
+
+func (c *RTCClient) WriteJSON(v any) error {
+	c.Mu.Lock()
+	defer c.Mu.Unlock()
+
+	return c.Conn.WriteJSON(v)
+}
+
+func (c *RTCClient) WriteMessage(mt int, data []byte) error {
+	c.Mu.Lock()
+	defer c.Mu.Unlock()
+
+	return c.Conn.WriteMessage(mt, data)
+}
+
 type ChatMessage struct {
 	User    string `json:"user"`
 	Message string `json:"message"`

@@ -18,7 +18,9 @@ func main() {
 	e.GET("/ws", func(c *echo.Context) error {
 		return handlers.WebsktHandler(c, hm)
 	})
-	e.GET("/ws/video", handlers.WsEchoHandler)
+	e.GET("/ws/video", func(c *echo.Context) error {
+		return handlers.WsEchoHandler(c, hm)
+	})
 	e.GET("/join-room-form", handlers.JoinRoomForm)
 
 	e.POST("/create-room", func(c *echo.Context) error {

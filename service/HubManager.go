@@ -12,8 +12,10 @@ type HubManager struct {
 }
 
 type Room struct {
-	Code string `json:"code"`
-	Hub  *Hub   `json:"hub omitempty"`
+	Code    string `json:"code"`
+	Hub     *Hub   `json:"hub omitempty"`
+	Clients map[string]*RTCClient
+	Mu      sync.RWMutex
 }
 
 func generateCode() string {
@@ -30,7 +32,7 @@ func (hm *HubManager) CreateRoom() *Room {
 
 	hub := NewHub()
 
-	room := &Room{Code: code, Hub: hub}
+	room := &Room{Code: code, Hub: hub, Clients: make(map[string]*RTCClient), Mu: sync.RWMutex{}}
 
 	hm.Room[code] = room
 

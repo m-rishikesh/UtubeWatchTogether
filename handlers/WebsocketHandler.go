@@ -55,26 +55,6 @@ func WebsktHandler(c *echo.Context, hm *service.HubManager) error {
 
 // contains webRTC logic
 
-type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	Mu   *sync.Mutex
-}
-
-func (c *Client) WriteJSON(v any) error {
-	c.Mu.Lock()
-	defer c.Mu.Unlock()
-
-	return c.Conn.WriteJSON(v)
-}
-
-func (c *Client) WriteMessage(mt int, data []byte) error {
-	c.Mu.Lock()
-	defer c.Mu.Unlock()
-
-	return c.Conn.WriteMessage(mt, data)
-}
-
 type SignalMessage struct {
 	Type      string          `json:"type"`
 	From      string          `json:"from,omitempty"`
@@ -86,49 +66,51 @@ type SignalMessage struct {
 	Candidate json.RawMessage `json:"candidate,omitempty"`
 }
 
-var (
-	clients = make(map[string]*Client)
-	mu      sync.RWMutex
-)
-
 func generateID() string {
 	return strconv.Itoa(rand.Intn(1000000))
 }
 
-func WsEchoHandler(c *echo.Context) error {
-	wsHandler(c.Response(), c.Request())
+func WsEchoHandler(c *echo.Context, hm *service.HubManager) error {
+	wsHandler(c.Response(), c.Request(), hm)
 	return nil
 }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+func wsHandler(w http.ResponseWriter, r *http.Request, hm *service.HubManager) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
-
+	roomcode := r.FormValue("code")
 	id := generateID()
-
-	client := &Client{
+	room := hm.FindRoom(roomcode)
+	fmt.Println("Room:", room)
+	if room == nil {
+		conn.Close()
+		return
+	}
+	client := &service.RTCClient{
 		ID:   id,
 		Conn: conn,
 		Mu:   &sync.Mutex{},
+		Room: room,
 	}
-
-	mu.Lock()
+	fmt.Println("CLient Video:", client.ID)
+	room.Mu.Lock()
 
 	existingUsers := []string{}
-	for userID := range clients {
+	fmt.Println("Room Clients:", room.Clients)
+	for userID := range room.Clients {
 		existingUsers = append(existingUsers, userID)
 	}
 
-	clients[id] = client
+	room.Clients[id] = client
 
-	mu.Unlock()
+	room.Mu.Unlock()
 
 	client.WriteJSON(SignalMessage{
 		Type:   "userId",
-		UserID: id,
+		UserID: client.ID,
 	})
 
 	client.WriteJSON(SignalMessage{
@@ -136,15 +118,15 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		Users: existingUsers,
 	})
 
-	broadcastUserJoined(id)
+	broadcastUserJoined(client, room)
 
 	defer func() {
 
-		mu.Lock()
-		delete(clients, id)
-		mu.Unlock()
+		room.Mu.Lock()
+		delete(room.Clients, id)
+		room.Mu.Unlock()
 
-		broadcastUserLeft(id)
+		broadcastUserLeft(client, room)
 
 		conn.Close()
 	}()
@@ -166,9 +148,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 		case "offer", "answer", "candidate":
 
-			mu.RLock()
-			target, ok := clients[msg.To]
-			mu.RUnlock()
+			room.Mu.RLock()
+			target, ok := room.Clients[msg.To]
+			room.Mu.RUnlock()
 
 			if ok {
 				target.WriteMessage(
@@ -180,37 +162,49 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func broadcastUserJoined(id string) {
+func broadcastUserJoined(client *service.RTCClient, room *service.Room) {
 
 	msg := SignalMessage{
 		Type:   "user_joined",
-		UserID: id,
+		UserID: client.ID,
 	}
 
-	mu.RLock()
-	defer mu.RUnlock()
+	room.Mu.RLock()
 
-	for userID, client := range clients {
+	targets := make([]*service.RTCClient, 0, len(room.Clients))
 
-		if userID == id {
+	for userID, c := range room.Clients {
+		if userID == client.ID {
 			continue
 		}
+		targets = append(targets, c)
+	}
 
-		client.WriteJSON(msg)
+	room.Mu.RUnlock()
+
+	for _, c := range targets {
+		c.WriteJSON(msg)
 	}
 }
 
-func broadcastUserLeft(id string) {
+func broadcastUserLeft(client *service.RTCClient, room *service.Room) {
 
 	msg := SignalMessage{
 		Type:   "user_left",
-		UserID: id,
+		UserID: client.ID,
 	}
 
-	mu.RLock()
-	defer mu.RUnlock()
+	room.Mu.RLock()
 
-	for _, client := range clients {
-		client.WriteJSON(msg)
+	targets := make([]*service.RTCClient, 0, len(room.Clients))
+
+	for _, c := range room.Clients {
+		targets = append(targets, c)
+	}
+
+	room.Mu.RUnlock()
+
+	for _, c := range targets {
+		c.WriteJSON(msg)
 	}
 }
