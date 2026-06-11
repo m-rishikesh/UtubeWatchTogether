@@ -53,6 +53,8 @@ func WebsktHandler(c *echo.Context, hm *service.HubManager) error {
 	return nil
 }
 
+// contains webRTC logic
+
 type Client struct {
 	ID   string
 	Conn *websocket.Conn
@@ -124,9 +126,14 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	mu.Unlock()
 
-	conn.WriteJSON(SignalMessage{
+	client.WriteJSON(SignalMessage{
 		Type:   "userId",
 		UserID: id,
+	})
+
+	client.WriteJSON(SignalMessage{
+		Type:  "existing_user",
+		Users: existingUsers,
 	})
 
 	broadcastUserJoined(id)
@@ -164,7 +171,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			mu.RUnlock()
 
 			if ok {
-				target.Conn.WriteMessage(
+				target.WriteMessage(
 					websocket.TextMessage,
 					data,
 				)
@@ -189,7 +196,7 @@ func broadcastUserJoined(id string) {
 			continue
 		}
 
-		client.Conn.WriteJSON(msg)
+		client.WriteJSON(msg)
 	}
 }
 
@@ -204,6 +211,6 @@ func broadcastUserLeft(id string) {
 	defer mu.RUnlock()
 
 	for _, client := range clients {
-		client.Conn.WriteJSON(msg)
+		client.WriteJSON(msg)
 	}
 }

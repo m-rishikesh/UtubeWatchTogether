@@ -1,5 +1,7 @@
 console.log("INDEX.JS LOADED")
-const ws = new WebSocket("wss://utubewatchtogether.onrender.com/ws/video")
+const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+const ws = new WebSocket(`${proto}//${window.location.host}/ws/video`)
+console.log("ws:",ws)
 const peers = {}
 const pendingCandidates = {};
 let userId;
@@ -25,6 +27,10 @@ async function startCamera() {
     }
 }
 function createPeers(remoteId){
+    if (!localStream){
+        console.error("localstream not ready");
+        return;
+    }
     if (peers[remoteId]){return peers[remoteId]}
     const pc = new RTCPeerConnection({
         iceServers: [
@@ -46,10 +52,29 @@ function createPeers(remoteId){
             "from":userId,
             "candidate":event.candidate
         }))
-    }
+    };
+
+    pc.onconnectionstatechange = () => {
+    console.log(
+        remoteId,
+        "connectionState:",
+        pc.connectionState
+    );
+    };
+
+pc.oniceconnectionstatechange = () => {
+    console.log(
+        remoteId,
+        "iceState:",
+        pc.iceConnectionState
+    );
+};
 
     pc.ontrack = event => {
-
+        console.log(
+        "TRACK RECEIVED FROM",
+        remoteId
+        );
         let video =
             document.getElementById("remote-" + remoteId);
 
@@ -90,31 +115,41 @@ ws.onmessage = async (event) =>{
             userId = msg.userId;
             console.log("userId of current User:",userId);
             break;
-        case "user_joined":{
-            await cameraloading
-            const remoteId = msg.userId;
-            console.log("UserJoined",remoteId);
-            const pc = createPeers(remoteId);
-            if (pendingCandidates[remoteId]) {
-                for (
-                    const candidate
-                    of pendingCandidates[remoteId]
-                ) {
-                    await pc.addIceCandidate(
-                        new RTCIceCandidate(candidate)
-                    );
+        case "existing_user": {
+            await cameraloading;
+
+            console.log(
+                "existing users",
+                msg.users
+            );
+
+            for (const remoteId of msg.users) {
+
+                if (remoteId === userId) {
+                    continue;
                 }
 
-                delete pendingCandidates[remoteId];
+                const pc = createPeers(remoteId);
+
+                const offer =
+                    await pc.createOffer();
+
+                await pc.setLocalDescription(
+                    offer
+                );
+
+                ws.send(JSON.stringify({
+                    type: "offer",
+                    from: userId,
+                    to: remoteId,
+                    offer: offer,
+                }));
             }
-                        const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            ws.send(JSON.stringify({
-                "type":"offer",
-                "from":userId,
-                "to":remoteId,
-                "offer":offer,
-            }))
+
+            break;
+        }
+        case "user_joined":{
+            console.log("User Joined",msg.userId)
             break;
         }
         case "offer":{
@@ -148,6 +183,13 @@ ws.onmessage = async (event) =>{
         case "answer":{
             console.log("answer")
             const pc = peers[msg.from];
+            if (!pc) {
+                console.error(
+                    "peer not found for answer",
+                    msg.from
+                );
+                break;
+            }
             await pc.setRemoteDescription(new RTCSessionDescription(msg.answer));
             break;
         }
