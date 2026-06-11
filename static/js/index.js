@@ -236,3 +236,48 @@ ws.onmessage = async (event) =>{
     }
 }
 
+function addRemoteVideo(userId, stream) {
+    let video =
+        document.getElementById(
+            `remote-${userId}`
+        );
+
+    if (!video) {
+
+        video =
+            document.createElement(
+                "video"
+            );
+
+        video.id =
+            `remote-${userId}`;
+
+        video.autoplay = true;
+        video.playsInline = true;
+
+        video.style.width = "100%";
+        video.style.aspectRatio = "16 / 9";
+        video.style.objectFit = "cover";
+        video.style.background = "black";
+        video.style.borderRadius = "8px";
+
+        document
+            .getElementById("videos")
+            .appendChild(video);
+    }
+
+    video.srcObject = stream;
+}
+
+function toggleFullscreen() {
+  const wrap = document.getElementById("playerWrap");
+  if (!document.fullscreenElement) {
+    wrap.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+document.addEventListener("fullscreenchange", () => {
+  document.getElementById("fsBtn").textContent =
+    document.fullscreenElement ? "⊡ Exit" : "⛶ Fullscreen";
+});
