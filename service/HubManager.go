@@ -29,7 +29,7 @@ func generateCode() string {
 }
 
 func (hm *HubManager) RoomCleaner() {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
