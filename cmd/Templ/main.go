@@ -11,7 +11,7 @@ import (
 
 func main() {
 	hm := &service.HubManager{Room: make(map[string]*service.Room), Mutex: &sync.RWMutex{}}
-	// go hm.RoomCleaner()
+	go hm.RoomCleaner()
 	e := echo.New()
 	e.Static("/static", "./static")
 
