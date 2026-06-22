@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gotth/cmd/Templ/components"
 	"gotth/service"
+	"log"
 	"net/http"
 	"strings"
 
@@ -31,6 +32,7 @@ func JoinRoomHandler(c *echo.Context, hm *service.HubManager) error {
 	} else {
 		fmt.Println("code", code)
 	}
+	log.Println("joinroom calling findroom")
 	room := hm.FindRoom(code)
 	fmt.Println("room:", room)
 	if room == nil {

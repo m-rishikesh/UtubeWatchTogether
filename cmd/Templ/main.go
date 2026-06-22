@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gotth/config"
 	"gotth/handlers"
 	"gotth/service"
 	"log"
@@ -11,7 +12,8 @@ import (
 
 func main() {
 	hm := &service.HubManager{Room: make(map[string]*service.Room), Mutex: &sync.RWMutex{}}
-	go hm.RoomCleaner()
+	// go hm.RoomCleaner()
+	config.InitRedis()
 	e := echo.New()
 	e.Static("/static", "./static")
 

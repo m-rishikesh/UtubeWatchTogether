@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"gotth/config"
 	"log"
 	"time"
 )
@@ -126,8 +127,25 @@ func (h *Hub) Run() {
 			close(client.Send)
 
 			if h.ClientSize() == 0 {
-				close(h.Done)
-				return
+
+				room := client.Room
+
+				go func() {
+					time.Sleep(30 * time.Second)
+					if room.Hub.ClientSize() != 0 {
+						return
+					}
+					room.Manager.Mutex.Lock()
+					delete(room.Manager.Room, room.Code)
+					room.Manager.Mutex.Unlock()
+					if err := config.DeleteRoom(room.Code); err != nil {
+						log.Println(err)
+					}
+
+					close(room.Hub.Done)
+
+					log.Println("deleted room:", room.Code)
+				}()
 			}
 
 		case message := <-h.Broadcast:
@@ -154,6 +172,13 @@ func (h *Hub) Run() {
 						default:
 							fmt.Println("Unknown message type:", msg.Type)
 						}
+						updateRedisState := config.RoomState{
+							RoomCode:   message.Sender.Room.Code,
+							PlayerTime: h.PlayerTime,
+							IsPlaying:  h.IsPlaying,
+							VideoURL:   "",
+						}
+						config.SaveRoom(updateRedisState)
 						fmt.Println("Hub Last Data:", h.PlayerTime, h.LastUpdatedAt, h.IsPlaying)
 						h.StateMutex <- true
 					}
