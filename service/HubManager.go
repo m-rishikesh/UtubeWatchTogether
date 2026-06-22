@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"time"
 )
 
 type HubManager struct {
@@ -25,6 +26,29 @@ func generateCode() string {
 		code[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(code)
+}
+
+func (hm *HubManager) RoomCleaner() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		hm.Mutex.Lock()
+
+		for code, room := range hm.Room {
+
+			room.Mu.RLock()
+			empty := room.Hub.ClientSize() == 0
+			room.Mu.RUnlock()
+
+			if empty {
+				delete(hm.Room, code)
+				fmt.Println("Deleted room:", code)
+			}
+		}
+
+		hm.Mutex.Unlock()
+	}
 }
 
 func (hm *HubManager) CreateRoom() *Room {

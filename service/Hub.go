@@ -3,6 +3,8 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
 )
 
 type Hub struct {
@@ -14,6 +16,7 @@ type Hub struct {
 	LastUpdatedAt int64
 	IsPlaying     bool
 	StateMutex    chan bool // Used to safely update state
+	Done          chan struct{}
 }
 
 type VideoState struct {
@@ -26,6 +29,7 @@ type VideoState struct {
 type BroadcastMessage struct {
 	MessageVideo []byte
 	MessageChat  []byte
+	HeartBeat    []byte
 	Sender       *Client
 }
 
@@ -41,6 +45,7 @@ func NewHub() *Hub {
 		Unregister: make(chan *Client),
 		Broadcast:  make(chan BroadcastMessage),
 		StateMutex: make(chan bool, 1),
+		Done:       make(chan struct{}),
 	}
 }
 
@@ -48,8 +53,48 @@ func (h *Hub) ClientSize() int {
 	return len(h.Clients)
 }
 
+func (h *Hub) HeartBeat() {
+	<-h.StateMutex
+	state := &VideoState{
+		Type:          "heartbeat",
+		IsPlaying:     h.IsPlaying,
+		LastUpdatedAt: h.LastUpdatedAt,
+		CurrentTime:   h.PlayerTime,
+	}
+	h.StateMutex <- true
+	beatbyte, err := json.Marshal(state)
+	if err != nil {
+		log.Println("failed to marshal heartbeat:", err)
+		return
+	}
+	beatMessage := BroadcastMessage{
+		MessageVideo: nil,
+		MessageChat:  nil,
+		HeartBeat:    beatbyte,
+		Sender:       nil,
+	}
+
+	h.Broadcast <- beatMessage
+}
+
+func (h *Hub) HeartBeatLoop() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			h.HeartBeat()
+
+		case <-h.Done:
+			return
+		}
+	}
+}
+
 func (h *Hub) Run() {
 	h.StateMutex <- true // Initialize semaphore
+	go h.HeartBeatLoop()
 	for {
 		select {
 		case client := <-h.Register:
@@ -79,6 +124,11 @@ func (h *Hub) Run() {
 		case client := <-h.Unregister:
 			delete(h.Clients, client)
 			close(client.Send)
+
+			if h.ClientSize() == 0 {
+				close(h.Done)
+				return
+			}
 
 		case message := <-h.Broadcast:
 			// Parse incoming message to update state
@@ -113,6 +163,9 @@ func (h *Hub) Run() {
 				broadcasttoclient(h, message, messageData, false)
 			}
 			if messageData = message.MessageChat; messageData != nil {
+				broadcasttoclient(h, message, messageData, true)
+			}
+			if messageData = message.HeartBeat; messageData != nil {
 				broadcasttoclient(h, message, messageData, true)
 			}
 

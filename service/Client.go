@@ -108,8 +108,13 @@ func (c *Client) ReceiveFromHub(h *Hub) {
 		if !ok {
 			return
 		}
-
-		err := c.Conn.WriteMessage(websocket.TextMessage, message)
+		var bb VideoState
+		err := json.Unmarshal(message, &bb)
+		if err != nil {
+			log.Println("error parsing the heartbeat")
+		}
+		fmt.Println("heartbeat:", bb)
+		err = c.Conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			c.Disconnect()
 			return

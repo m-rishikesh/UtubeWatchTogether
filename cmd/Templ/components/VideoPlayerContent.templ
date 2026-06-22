@@ -144,10 +144,23 @@ templ VideoPlayerContent(roomCode string) {
             const msg = JSON.parse(event.data);
             console.log("RAW:", event.data);
 
+            if (msg.type == 'heartbeat'){
+                if (msg.isPlaying == true){
+                    const delay = (Date.now() - msg.sendAt) / 1000;
+                    player.currentTime = msg.currentTime + delay;
+                    player.play().catch(console.error);
+                    console.log("heartbeat playing")
+                }else{
+                    player.currentTime = msg.currentTime;
+                    console.log("playercurrenttime:",player.currentTime)
+                }
+                return
+            }
             if (msg.chatmessage) {
                 appendChat(msg.chatmessage.user, msg.chatmessage.message);
                 return;
             }
+
 
             if (!msg.videomessage) return;
             const video = msg.videomessage;
