@@ -68,7 +68,7 @@ func (c *Client) Disconnect() {
 		select {
 		case c.Room.Hub.Unregister <- c:
 			fmt.Printf("[DISCONNECTED]: client: %v disconnected from room: %v", c, c.Room)
-		default:
+		case <-c.Room.Hub.Done:
 		}
 		c.Conn.Close()
 	})

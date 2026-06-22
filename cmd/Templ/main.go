@@ -33,5 +33,9 @@ func main() {
 		return handlers.JoinRoomHandler(c, hm)
 	})
 
+	e.GET("/auto-join", func(c *echo.Context) error {
+		return handlers.AutoJoinHandler(c, hm)
+	})
+
 	log.Fatal(e.Start(":8080"))
 }

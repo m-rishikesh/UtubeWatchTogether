@@ -69,6 +69,22 @@ templ Home() {
                 </div>
             </div>
         </div>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const roomCode = sessionStorage.getItem("room_code");
+
+                if (!roomCode) return;
+
+                htmx.ajax(
+                    "GET",
+                    "/auto-join?code=" + roomCode,
+                    {
+                        target: "body",
+                        swap: "innerHTML"
+                    }
+                );
+            });
+        </script>
     }
 }
 

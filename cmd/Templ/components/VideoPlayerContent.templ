@@ -82,6 +82,7 @@ templ VideoPlayerContent(roomCode string) {
 
     <script>
         const ROOM_CODE = "{{roomCode}}";
+        sessionStorage.setItem("room_code",ROOM_CODE)
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws?code=${ROOM_CODE}`);
 
@@ -89,13 +90,20 @@ templ VideoPlayerContent(roomCode string) {
         const timeline     = document.getElementById("timeline");
         const chatMessages = document.getElementById("chatMessages");
         const chatInput    = document.getElementById("chatInput");
+        const disconnectButton = document.getElementById("end");
 
         let isSeeking = false;
 
         socket.onopen  = () => console.log("Connected");
         socket.onerror = (err) => console.log(err);
         socket.onclose = () => console.log("Disconnected");
-
+        
+        function leaveroom(){
+            sessionStorage.removeItem("room_code")
+            socket.close()
+            ws.close()
+            window.location.href = "/";
+        }
         function send(msg) {
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify(msg));

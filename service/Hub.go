@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gotth/config"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type Hub struct {
 	IsPlaying     bool
 	StateMutex    chan bool // Used to safely update state
 	Done          chan struct{}
+	DoneOnce      sync.Once
 }
 
 type VideoState struct {
@@ -101,6 +103,7 @@ func (h *Hub) Run() {
 		case client := <-h.Register:
 			h.Clients[client] = true
 			// Send current state to newly connected client
+			config.PersistRoom(client.Room.Code)
 			<-h.StateMutex
 
 			state := VideoState{
@@ -129,7 +132,7 @@ func (h *Hub) Run() {
 			if h.ClientSize() == 0 {
 
 				room := client.Room
-
+				config.SetRoomTTL(room.Code)
 				go func() {
 					time.Sleep(30 * time.Second)
 					if room.Hub.ClientSize() != 0 {
@@ -141,8 +144,9 @@ func (h *Hub) Run() {
 					if err := config.DeleteRoom(room.Code); err != nil {
 						log.Println(err)
 					}
-
-					close(room.Hub.Done)
+					room.Hub.DoneOnce.Do(func() {
+						close(room.Hub.Done)
+					})
 
 					log.Println("deleted room:", room.Code)
 				}()

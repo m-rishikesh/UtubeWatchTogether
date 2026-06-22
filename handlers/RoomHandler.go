@@ -62,3 +62,14 @@ func JoinRoomHandler(c *echo.Context, hm *service.HubManager) error {
 	component := components.RoomActive(roomData)
 	return component.Render(c.Request().Context(), c.Response())
 }
+
+func AutoJoinHandler(c *echo.Context, hm *service.HubManager) error {
+
+	code := c.QueryParam("code")
+	room := hm.FindRoom(code)
+	if room != nil {
+		return components.RoomActive(components.Room{Code: code}).Render(c.Request().Context(), c.Response())
+	}
+	return nil
+
+}

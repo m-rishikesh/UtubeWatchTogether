@@ -24,6 +24,7 @@ type RoomState struct {
 
 func InitRedis() {
 	redis_url := os.Getenv("REDIS_URL")
+	log.Println(redis_url)
 	Ctx = context.Background()
 	Rdb = redis.NewClient(&redis.Options{
 		Addr: redis_url,
@@ -39,7 +40,7 @@ func InitRedis() {
 
 func SaveRoom(room RoomState) error {
 	key := "Room:" + room.RoomCode
-	return Rdb.HSet(
+	err := Rdb.HSet(
 		Ctx, key, map[string]any{
 			"code":       room.RoomCode,
 			"url":        room.VideoURL,
@@ -47,6 +48,8 @@ func SaveRoom(room RoomState) error {
 			"isPlaying":  room.IsPlaying,
 		},
 	).Err()
+	return err
+
 }
 
 func GetRoom(code string) (*RoomState, error) {
@@ -103,18 +106,19 @@ func RoomExists(code string) (bool, error) {
 	return count > 0, nil
 }
 
-func SetRoomTTL(code string, ttl time.Duration) error {
+func SetRoomTTL(code string) error {
+	log.Println("SetRoomTTL called")
 	return Rdb.Expire(
 		Ctx,
 		"Room:"+code,
-		ttl,
+		30*time.Minute,
 	).Err()
 }
 
-func RefreshRoomTTL(code string) error {
-	return Rdb.Expire(
+func PersistRoom(roomCode string) error {
+	log.Println("persist room called")
+	return Rdb.Persist(
 		Ctx,
-		"Room:"+code,
-		24*time.Hour,
+		"Room:"+roomCode,
 	).Err()
 }
