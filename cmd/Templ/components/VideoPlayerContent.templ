@@ -175,6 +175,7 @@ templ VideoPlayerContent(roomCode string) {
 
             if (video.type === "sync") {
                 if (video.isPlaying) {
+                    console.log("is playing is called")
                     const delay = (Date.now() - video.sendAt) / 1000;
                     player.currentTime = video.currentTime + delay;
                     player.play().catch(console.error);
