@@ -113,7 +113,6 @@ func (c *Client) ReceiveFromHub(h *Hub) {
 		if err != nil {
 			log.Println("error parsing the heartbeat")
 		}
-		fmt.Println("heartbeat:", bb)
 		err = c.Conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			c.Disconnect()
