@@ -16,10 +16,11 @@ var (
 )
 
 type RoomState struct {
-	RoomCode   string
-	PlayerTime float64
-	VideoURL   string
-	IsPlaying  bool
+	RoomCode      string
+	PlayerTime    float64
+	VideoURL      string
+	IsPlaying     bool
+	LastUpdatedAt int64
 }
 
 func InitRedis() {
@@ -42,10 +43,11 @@ func SaveRoom(room RoomState) error {
 	key := "Room:" + room.RoomCode
 	err := Rdb.HSet(
 		Ctx, key, map[string]any{
-			"code":       room.RoomCode,
-			"url":        room.VideoURL,
-			"playertime": room.PlayerTime,
-			"isPlaying":  room.IsPlaying,
+			"code":          room.RoomCode,
+			"url":           room.VideoURL,
+			"playertime":    room.PlayerTime,
+			"isPlaying":     room.IsPlaying,
+			"lastupdatedAt": room.LastUpdatedAt,
 		},
 	).Err()
 	return err
@@ -70,6 +72,11 @@ func GetRoom(code string) (*RoomState, error) {
 		return nil, err
 	}
 
+	lastupdate_at, err := strconv.ParseInt(data["lastupdatedAt"], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
 	isPlaying, err := strconv.ParseBool(
 		data["isPlaying"],
 	)
@@ -78,10 +85,11 @@ func GetRoom(code string) (*RoomState, error) {
 	}
 
 	return &RoomState{
-		RoomCode:   data["code"],
-		VideoURL:   data["url"],
-		IsPlaying:  isPlaying,
-		PlayerTime: playerTime,
+		RoomCode:      data["code"],
+		VideoURL:      data["url"],
+		IsPlaying:     isPlaying,
+		PlayerTime:    playerTime,
+		LastUpdatedAt: lastupdate_at,
 	}, nil
 }
 

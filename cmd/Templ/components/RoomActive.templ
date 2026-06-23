@@ -6,6 +6,7 @@ type Room struct {
 
 templ RoomActive(room Room) {
     @Base("Room - GoTTH") {
+        <script src="https://www.youtube.com/iframe_api"></script>
         <div
             style="
                 display:flex;
@@ -92,6 +93,32 @@ templ RoomActive(room Room) {
                     overflow:auto;
                 "
             >
+            <div style="display:flex; gap:8px; padding:10px; background:#111;">
+                        <input
+                            id="youtubeUrl"
+                            placeholder="Paste YouTube URL..."
+                            style="flex:1; padding:8px;"
+                        />
+                        <button
+                            id="loadVideoBtn"
+                            style="
+                                background:white;
+                                color:black;
+                                border:2px solid black;
+                                padding:10px 20px;
+                                border-radius:8px;
+                                font-weight:600;
+                                cursor:pointer;
+                                transition:all 0.2s ease;
+                                letter-spacing:0.5px;
+                                min-width:90px;
+                            "
+                            onmouseover="this.style.background='black';this.style.color='white';"
+                            onmouseout="this.style.background='white';this.style.color='black';"
+                        >
+                            Load
+                        </button>
+                    </div>
                 @VideoPlayerContent(room.Code)
             </div>
         </div>

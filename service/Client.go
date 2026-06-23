@@ -47,6 +47,7 @@ type VideoMessage struct {
 	CurrentTime float64 `json:"currentTime"`
 	SendAt      int64   `json:"sendAt"`
 	IsPlaying   bool    `json:"isPlaying,omitempty"`
+	VideoURL    string  `json:"video_url"`
 }
 
 type WSMessage struct {

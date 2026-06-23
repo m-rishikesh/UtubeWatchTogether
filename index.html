@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<style>
+    #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.8);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#modal {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 500px;
+}
+
+#youtubeUrl {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+</style>
+<body>
+<div id="overlay">
+    <div id="modal">
+        <h2>Enter YouTube URL</h2>
+
+        <input
+            type="text"
+            id="youtubeUrl"
+            placeholder="https://www.youtube.com/watch?v=..."
+        >
+
+        <button id="loadVideo">
+            Load Video
+        </button>
+    </div>
+</div>
+<div id="player"></div>
+
+<div>
+    <button onclick="playVideo()">Play</button>
+    <button onclick="pauseVideo()">Pause</button>
+
+    <span id="current">0:00</span>
+
+    <input
+        type="range"
+        id="timeline"
+        min="0"
+        max="100"
+        value="0"
+        step="0.1"
+        style="width:500px"
+    >
+
+    <span id="duration">0:00</span>
+</div>
+
+<button onclick="playVideo()">Play</button>
+<button onclick="pauseVideo()">Pause</button>
+<button onclick="seekForward()">+10s</button>
+<button onclick="seekBackward()">-10s</button>
+
+<script>
+let player;
+let timeline = document.getElementById("timeline");
+let currentText = document.getElementById("current");
+let durationText = document.getElementById("duration");
+
+document.getElementById("loadVideo")
+.addEventListener("click", () => {
+
+    const url = document.getElementById("youtubeUrl").value;
+
+    const videoId = extractVideoId(url);
+
+    if (!videoId) {
+        alert("Invalid YouTube URL");
+        return;
+    }
+
+    document.getElementById("overlay").style.display = "none";
+
+    createPlayer(videoId);
+});
+
+
+function extractVideoId(url) {
+
+    const regex =
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/;
+
+    const match = url.match(regex);
+
+    return match ? match[1] : null;
+}
+
+function createPlayer(videoId) {
+
+    player = new YT.Player("player", {
+        height: "390",
+        width: "640",
+        videoId,
+        playerVars: {
+            controls: 0
+        },
+        events: {
+            onReady: onPlayerReady
+        }
+    });
+}
+
+function onPlayerReady() {
+
+    setInterval(() => {
+
+        if (!player) return;
+
+        const current = player.getCurrentTime();
+        const duration = player.getDuration();
+
+        if (!duration) return;
+
+        timeline.max = duration;
+        timeline.value = current;
+
+        currentText.textContent = formatTime(current);
+        durationText.textContent = formatTime(duration);
+
+    }, 250);
+}
+
+timeline.addEventListener("input", () => {
+    player.seekTo(Number(timeline.value), true);
+});
+
+function playVideo() {
+    player.playVideo();
+}
+
+function pauseVideo() {
+    player.pauseVideo();
+}
+
+function formatTime(seconds) {
+
+    seconds = Math.floor(seconds);
+
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+function seekForward() {
+    if (!player) return;
+
+    player.seekTo(player.getCurrentTime() + 10, true);
+}
+
+function seekBackward() {
+    if (!player) return;
+
+    player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
+}
+</script>
+
+</body>
+</html>

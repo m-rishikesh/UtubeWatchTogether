@@ -79,10 +79,11 @@ func (hm *HubManager) CreateRoom() *Room {
 	hm.Room[code] = room
 	hm.Mutex.Unlock()
 	err := config.SaveRoom(config.RoomState{
-		RoomCode:   code,
-		VideoURL:   "",
-		IsPlaying:  room.Hub.IsPlaying,
-		PlayerTime: room.Hub.PlayerTime,
+		RoomCode:      code,
+		VideoURL:      "",
+		IsPlaying:     room.Hub.IsPlaying,
+		PlayerTime:    room.Hub.PlayerTime,
+		LastUpdatedAt: room.Hub.LastUpdatedAt,
 	})
 	if err != nil {
 		log.Println("failed to save the room in redis")
@@ -110,6 +111,8 @@ func (hm *HubManager) FindRoom(code string) *Room {
 
 	hub.PlayerTime = roomstate.PlayerTime
 	hub.IsPlaying = roomstate.IsPlaying
+	hub.VideoURL = roomstate.VideoURL
+	hub.LastUpdatedAt = roomstate.LastUpdatedAt
 
 	room = &Room{
 		Code:    roomstate.RoomCode,

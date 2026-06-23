@@ -17,6 +17,7 @@ type Hub struct {
 	PlayerTime    float64
 	LastUpdatedAt int64
 	IsPlaying     bool
+	VideoURL      string
 	StateMutex    chan bool // Used to safely update state
 	Done          chan struct{}
 	DoneOnce      sync.Once
@@ -27,6 +28,7 @@ type VideoState struct {
 	CurrentTime   float64 `json:"currentTime"`
 	IsPlaying     bool    `json:"isPlaying"`
 	LastUpdatedAt int64   `json:"sendAt"`
+	VideoURL      string  `json:"video_url"`
 }
 
 type BroadcastMessage struct {
@@ -63,6 +65,7 @@ func (h *Hub) HeartBeat() {
 		IsPlaying:     h.IsPlaying,
 		LastUpdatedAt: h.LastUpdatedAt,
 		CurrentTime:   h.PlayerTime,
+		VideoURL:      h.VideoURL,
 	}
 	h.StateMutex <- true
 	beatbyte, err := json.Marshal(state)
@@ -111,6 +114,7 @@ func (h *Hub) Run() {
 				CurrentTime:   h.PlayerTime,
 				LastUpdatedAt: h.LastUpdatedAt, // Send current time, not old timestamp
 				IsPlaying:     h.IsPlaying,
+				VideoURL:      h.VideoURL,
 			}
 			h.StateMutex <- true
 			fmt.Println("client joined:", state.Type, state.CurrentTime, state.LastUpdatedAt, state.IsPlaying)
@@ -160,6 +164,7 @@ func (h *Hub) Run() {
 				if err := json.Unmarshal(messageData, &wrapper); err == nil {
 					if wrapper.MessageVideo != nil {
 						msg := wrapper.MessageVideo
+						log.Println("VideoURl Hub:", h.VideoURL)
 						<-h.StateMutex
 						switch msg.Type {
 						case "play":
@@ -173,17 +178,23 @@ func (h *Hub) Run() {
 						case "seek":
 							h.PlayerTime = msg.CurrentTime
 							h.LastUpdatedAt = msg.LastUpdatedAt
+						case "video_change":
+							h.VideoURL = msg.VideoURL
+							h.IsPlaying = false
+							h.PlayerTime = 0
+							fmt.Println("video_change now url", h.VideoURL)
 						default:
 							fmt.Println("Unknown message type:", msg.Type)
 						}
 						updateRedisState := config.RoomState{
-							RoomCode:   message.Sender.Room.Code,
-							PlayerTime: h.PlayerTime,
-							IsPlaying:  h.IsPlaying,
-							VideoURL:   "",
+							RoomCode:      message.Sender.Room.Code,
+							PlayerTime:    h.PlayerTime,
+							IsPlaying:     h.IsPlaying,
+							VideoURL:      h.VideoURL,
+							LastUpdatedAt: h.LastUpdatedAt,
 						}
 						config.SaveRoom(updateRedisState)
-						fmt.Println("Hub Last Data:", h.PlayerTime, h.LastUpdatedAt, h.IsPlaying)
+						fmt.Println("Hub Last Data:", h.PlayerTime, h.LastUpdatedAt, h.IsPlaying, h.VideoURL, updateRedisState.VideoURL)
 						h.StateMutex <- true
 					}
 				}
@@ -205,6 +216,7 @@ func (h *Hub) Run() {
 func broadcasttoclient(h *Hub, message BroadcastMessage, messageData []byte, isClient bool) {
 	for client := range h.Clients {
 		// Skip the sender
+
 		if !isClient && client == message.Sender {
 			fmt.Println("Skipping sender client")
 			continue

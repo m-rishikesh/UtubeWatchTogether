@@ -1,6 +1,17 @@
 package components
 
 templ VideoPlayerContent(roomCode string) {
+    <style>
+        #player {
+            pointer-events: none;
+            width: 100%;
+            height: 62vh;
+        }
+
+        #playerWrap:fullscreen #player {
+            height: 100vh;
+        }
+    </style>
     <div style="display:flex; gap:16px; padding:8px; height:90vh; overflow:hidden; box-sizing:border-box;">
 
         <!-- LEFT SIDE -->
@@ -9,9 +20,11 @@ templ VideoPlayerContent(roomCode string) {
             <!-- PLAYER WRAPPER -->
             <div id="playerWrap" style="position:relative; width:100%; background:black; border-radius:12px; overflow:hidden; flex-shrink:0;">
 
-                <video id="player" style="display:block; width:100%; max-height:62vh; aspect-ratio:16/9; object-fit:contain; background:black;">
-                    <source src="/static/tuf_bug.mp4" type="video/mp4">
-                </video>
+                <div id="videoContainer">
+                    
+
+                    <div id="player"></div>
+                </div>
 
                 <!-- CONTROLS OVERLAY -->
                 <div style="position:absolute; left:0; right:0; bottom:0; padding:8px 12px 12px; background:linear-gradient(transparent, rgba(0,0,0,.85)); display:flex; flex-direction:column; gap:8px;">
@@ -22,19 +35,19 @@ templ VideoPlayerContent(roomCode string) {
 
                         <div style="display:flex; gap:8px;">
                             <button style="background:rgba(255,255,255,.2); color:#fff; border:none; border-radius:6px; padding:5px 12px; cursor:pointer; font-size:13px;"
-                                hx-on:click="player.play(); sendVideoMessage({type:'play', currentTime:player.currentTime, sendAt:Date.now()});">
+                                hx-on:click="ytPlayer.playVideo(); sendVideoMessage({type:'play', currentTime:ytPlayer.getCurrentTime(), sendAt:Date.now()});">
                                 ▶ Play
                             </button>
                             <button style="background:rgba(255,255,255,.2); color:#fff; border:none; border-radius:6px; padding:5px 12px; cursor:pointer; font-size:13px;"
-                                hx-on:click="player.pause(); sendVideoMessage({type:'pause', currentTime:player.currentTime, sendAt:Date.now()});">
+                                hx-on:click="ytPlayer.pauseVideo(); sendVideoMessage({type:'pause', currentTime:ytPlayer.getCurrentTime(), sendAt:Date.now()});">
                                 ⏸ Pause
                             </button>
                             <button style="background:rgba(255,255,255,.2); color:#fff; border:none; border-radius:6px; padding:5px 12px; cursor:pointer; font-size:13px;"
-                                hx-on:click="player.currentTime -= 10; sendVideoMessage({type:'seek', currentTime:player.currentTime, sendAt:Date.now()});">
+                                hx-on:click="const t = Math.max(0,ytPlayer.getCurrentTime()-10);ytPlayer.seekTo(t,true);sendVideoMessage({type:'seek', currentTime:t, sendAt:Date.now()});">
                                 -10s
                             </button>
                             <button style="background:rgba(255,255,255,.2); color:#fff; border:none; border-radius:6px; padding:5px 12px; cursor:pointer; font-size:13px;"
-                                hx-on:click="player.currentTime += 10; sendVideoMessage({type:'seek', currentTime:player.currentTime, sendAt:Date.now()});">
+                                hx-on:click="const t = Math.max(0,ytPlayer.getCurrentTime()+10);ytPlayer.seekTo(t,true);sendVideoMessage({type:'seek', currentTime:t, sendAt:Date.now()});">
                                 +10s
                             </button>
                         </div>
@@ -81,12 +94,14 @@ templ VideoPlayerContent(roomCode string) {
     </div>
 
     <script>
+        let ytPlayer = null;
+        let playerReady = false;
         const ROOM_CODE = "{{roomCode}}";
         sessionStorage.setItem("room_code",ROOM_CODE)
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws?code=${ROOM_CODE}`);
 
-        const player       = document.getElementById("player");
+        const playerDiv = document.getElementById("player");
         const timeline     = document.getElementById("timeline");
         const chatMessages = document.getElementById("chatMessages");
         const chatInput    = document.getElementById("chatInput");
@@ -103,6 +118,12 @@ templ VideoPlayerContent(roomCode string) {
             socket.close()
             ws.close()
             window.location.href = "/";
+        }
+        let ytReady = false;
+
+        function onYouTubeIframeAPIReady() {
+            ytReady = true;
+            console.log("YouTube API Ready");
         }
         function send(msg) {
             if (socket.readyState === WebSocket.OPEN) {
@@ -140,11 +161,12 @@ templ VideoPlayerContent(roomCode string) {
 
         document.addEventListener("fullscreenchange", () => {
             const btn = document.getElementById("fsBtn");
+
             if (!document.fullscreenElement) {
                 btn.textContent = "⛶ Fullscreen";
-                player.style.maxHeight = "62vh";
+                playerDiv.style.maxHeight = "62vh";
             } else {
-                player.style.maxHeight = "100vh";
+                playerDiv.style.maxHeight = "100vh";
             }
         });
 
@@ -152,59 +174,134 @@ templ VideoPlayerContent(roomCode string) {
             const msg = JSON.parse(event.data);
             console.log("RAW:", event.data);
 
-            if (msg.type == 'heartbeat'){
-                if (msg.isPlaying == true){
-                    const delay = (Date.now() - msg.sendAt) / 1000;
-                    player.currentTime = msg.currentTime + delay;
-                    player.play().catch(console.error);
-                    console.log("heartbeat playing")
-                }else{
-                    player.currentTime = msg.currentTime;
-                    console.log("playercurrenttime:",player.currentTime)
+            if (msg.type === 'heartbeat') {
+                if (!ytPlayer) return;
+                if (msg.isPlaying == true) {
+                    let timeinterval= (Date.now() - msg.sendAt)/1000 ;
+                    const serverTime = msg.currentTime + timeinterval;
+                    const localTime = ytPlayer.getCurrentTime();
+                    const diff = Math.abs(serverTime - localTime);
+                    console.log("diff:",diff)
+                    if (diff > 2) {
+                        ytPlayer.seekTo(serverTime, true);
+                        ytPlayer.playVideo();
+                    }
+                    console.log("heartbeat playing");
+                } 
+                else {
+                    setTimeout(() => {
+                        ytPlayer.pauseVideo();
+                    }, 100);
+                    ytPlayer.seekTo(
+                        msg.currentTime,
+                        true
+                    );
+                    console.log("playercurrenttime:", ytPlayer.getCurrentTime());
                 }
-                return
+                return; // Added this return to exit after heartbeat
             }
+
             if (msg.chatmessage) {
                 appendChat(msg.chatmessage.user, msg.chatmessage.message);
                 return;
             }
 
-
             if (!msg.videomessage) return;
             const video = msg.videomessage;
 
             if (video.type === "sync") {
+                console.log("video msg for sync", video);
+                console.log("raw", msg);
+                if (!ytPlayer && video.video_url) {
+                    if (!ytReady) {
+                        setTimeout(() => {
+                            if (!ytPlayer && ytReady) {
+                                createPlayer(video.video_url);
+                            }
+                        }, 500);
+                        return;
+                    }
+                    createPlayer(video.video_url);
+                }
+
+                if (!ytPlayer) return;
                 if (video.isPlaying) {
-                    console.log("is playing is called")
+                    console.log("is playing is called");
                     const delay = (Date.now() - video.sendAt) / 1000;
-                    player.currentTime = video.currentTime + delay;
-                    player.play().catch(console.error);
+                    ytPlayer.seekTo(
+                        video.currentTime + delay,
+                        true
+                    );
+                    ytPlayer.playVideo();
                 } else {
-                    player.currentTime = video.currentTime;
-                    player.pause();
+                    ytPlayer.seekTo(
+                        video.currentTime,
+                        true
+                    );
+                    ytPlayer.pauseVideo();
                 }
             } else if (video.type === "play") {
+                if (!ytPlayer) return;
                 const delay = (Date.now() - video.sendAt) / 1000;
-                player.currentTime = video.currentTime + delay;
-                player.play().catch(console.error);
+                ytPlayer.seekTo(
+                    video.currentTime + delay,
+                    true
+                );
+                ytPlayer.playVideo();
             } else if (video.type === "pause") {
-                player.currentTime = video.currentTime;
-                player.pause().catch(console.error);
+                if (!ytPlayer) return;
+                ytPlayer.seekTo(
+                    video.currentTime,
+                    true
+                );
+                ytPlayer.pauseVideo();
             } else if (video.type === "seek") {
+                if (!ytPlayer) return;
                 isSeeking = true;
-                player.currentTime = video.currentTime;
+                const wasPaused =
+                    ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING;
+
+                ytPlayer.seekTo(video.currentTime, true);
+
+                if (wasPaused) {
+                    setTimeout(() => {
+                        ytPlayer.pauseVideo();
+                    }, 100);
+                }
                 isSeeking = false;
+            } else if (video.type === "video_change") {
+                if (video.video_url) {
+                    createPlayer(video.video_url);
+                }
             }
         };
 
-        player.addEventListener("timeupdate", () => {
-            if (!player.duration || isSeeking) return;
-            timeline.value = (player.currentTime / player.duration) * 100;
-        });
+        setInterval(() => {
+            if (!ytPlayer) return;
+            if (!playerReady) return;
+            const duration = ytPlayer.getDuration();
+            const current = ytPlayer.getCurrentTime();
+
+            if (!duration) return;
+
+            timeline.value = (current / duration) * 100;
+        }, 250); // Added missing closing parenthesis and semicolon
 
         timeline.addEventListener("change", () => {
-            player.currentTime = (timeline.value / 100) * player.duration;
-            sendVideoMessage({ type: "seek", currentTime: player.currentTime, sendAt: Date.now() });
+
+            if (!ytPlayer) return;
+
+            const time =
+                (timeline.value / 100) *
+                ytPlayer.getDuration();
+
+            ytPlayer.seekTo(time, true);
+
+            sendVideoMessage({
+                type: "seek",
+                currentTime: time,
+                sendAt: Date.now()
+            });
         });
 
         document.getElementById("sendChat").addEventListener("click", () => {
@@ -216,6 +313,122 @@ templ VideoPlayerContent(roomCode string) {
 
         chatInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") document.getElementById("sendChat").click();
+        });
+
+        function createPlayer(videoId) {
+
+            if (!ytPlayer) {
+
+                ytPlayer = new YT.Player("player", {
+                    height: "100%",
+                    width: "100%",
+                    videoId: videoId,
+                    events: {
+                        onReady: (event) => {
+                            console.log("player ready");
+                            playerReady = true;
+                            event.target.pauseVideo()
+                            event.target.seekTo(0,true)
+                        },
+                        onStateChange: onPlayerStateChange
+
+                    },
+                    playerVars: {
+                        controls: 0,
+                        modestbranding: 1,
+                        rel: 0,
+                        fs: 0,
+                        disablekb: 1
+                    }
+                });
+
+                return;
+            }
+
+            ytPlayer.cueVideoById(videoId);
+
+            setTimeout(() => {
+                    playerReady = true;
+                }, 500);
+        }
+
+        function onPlayerStateChange(event) {
+
+                if (event.data === YT.PlayerState.ENDED) {
+
+                    sendVideoMessage({
+                        type: "pause",
+                        currentTime: ytPlayer.getDuration(),
+                        sendAt: Date.now()
+                    });
+
+                    ytPlayer.pauseVideo();
+                }
+            }
+        
+        function extractVideoId(url) {
+
+            const regex =
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/;
+
+            const match = url.match(regex);
+
+            return match ? match[1] : null;
+        }
+
+        document.getElementById("loadVideoBtn")
+            .addEventListener("click", () => {
+
+                const url = document.getElementById("youtubeUrl").value;
+
+                const videoId = extractVideoId(url);
+
+                if (!videoId) {
+                    alert("Invalid URL");
+                    return;
+                }
+                createPlayer(videoId); 
+                sendVideoMessage({
+                    type: "video_change",
+                    video_url: videoId,
+                    sendAt: Date.now()
+                });
+            });
+        document.addEventListener("keydown", (e) => {
+
+            if (
+                e.target.tagName === "INPUT" ||
+                e.target.tagName === "TEXTAREA"
+            ) {
+                return;
+            }
+
+            if (e.code !== "Space") return;
+
+            e.preventDefault();
+
+            if (!ytPlayer || !playerReady) return;
+
+            if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+
+                ytPlayer.pauseVideo();
+
+                sendVideoMessage({
+                    type: "pause",
+                    currentTime: ytPlayer.getCurrentTime(),
+                    sendAt: Date.now()
+                });
+
+            } else {
+
+                ytPlayer.playVideo();
+
+                sendVideoMessage({
+                    type: "play",
+                    currentTime: ytPlayer.getCurrentTime(),
+                    sendAt: Date.now()
+                });
+            }
         });
     </script>
     <script src="/static/js/index.js"></script>
